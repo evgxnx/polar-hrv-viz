@@ -1,11 +1,22 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.figure import Figure
 
 from .io import Recording
 from .processing import flag_artifacts
-from .style import ARTIFACT, BAND, INK_SECONDARY, MOTION, SERIES, light_theme
+from .style import (
+    ARTIFACT,
+    BAND,
+    INK_SECONDARY,
+    MOTION,
+    SERIES,
+    SURFACE,
+    light_theme,
+)
+
+HIST_BIN_MS = 50
 
 
 def _mark_phases(axes, phases) -> None:
@@ -79,4 +90,42 @@ def plot_timeline(rec: Recording, title: str | None = None) -> Figure:
         axes[-1].set_xlim(0, rec.duration_s / 60)
         if title:
             fig.suptitle(title, x=0.01, ha="left", fontsize=11, fontweight="bold")
+    return fig
+
+
+def plot_rr_histogram(rec: Recording) -> Figure:
+    rr = flag_artifacts(rec.rr)
+    values = rr.loc[~rr["artifact"], "rr_ms"].to_numpy(dtype=float)
+    lo = np.floor(values.min() / HIST_BIN_MS) * HIST_BIN_MS
+    hi = np.floor(values.max() / HIST_BIN_MS) * HIST_BIN_MS + HIST_BIN_MS
+    edges = np.arange(lo, hi + HIST_BIN_MS / 2, HIST_BIN_MS)
+    counts, _ = np.histogram(values, bins=edges)
+    share = 100 * counts / counts.sum()
+
+    with light_theme():
+        fig, ax = plt.subplots(figsize=(7, 3.6), layout="constrained")
+        ax.bar(
+            edges[:-1],
+            share,
+            width=HIST_BIN_MS,
+            align="edge",
+            color=SERIES,
+            edgecolor=SURFACE,
+            linewidth=1,
+        )
+        mode = int(np.argmax(share))
+        ax.annotate(
+            f"Mode {edges[mode]:.0f}–{edges[mode + 1]:.0f} ms, {share[mode]:.0f} %",
+            xy=(edges[mode] + HIST_BIN_MS / 2, share[mode]),
+            xytext=(0, 4),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color=INK_SECONDARY,
+        )
+        ax.set_title(f"RR interval distribution, {len(values)} clean beats")
+        ax.set_xlabel(f"RR interval, ms ({HIST_BIN_MS} ms bins)")
+        ax.set_ylabel("Share of beats, %")
+        ax.set_ylim(0, share.max() * 1.15)
     return fig
