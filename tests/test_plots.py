@@ -5,6 +5,7 @@ import pytest
 
 from polar_hrv_viz.io import load_recording
 from polar_hrv_viz.plots import (
+    plot_poincare,
     plot_rr_histogram,
     plot_timeline,
 )
@@ -49,6 +50,19 @@ def test_histogram_uses_50_ms_bins_and_sums_to_100(steady_recording):
     assert {round(b.get_width()) for b in bars} == {50}
     assert sum(b.get_height() for b in bars) == pytest.approx(100.0)
     assert ax.get_title(loc="left") == "RR interval distribution, 120 clean beats"
+
+
+def test_poincare_has_a_panel_per_phase(steady_recording):
+    fig = plot_poincare(load_recording(steady_recording))
+
+    assert [ax.get_title(loc="left") for ax in fig.axes] == ["rest", "task"]
+    assert fig.axes[0].texts[0].get_text() == "SD1 0 ms\nSD2 0 ms"
+
+
+def test_poincare_without_phases_shows_the_whole_recording(tmp_path):
+    rec = load_recording(write_recording(tmp_path / "r", [1000.0, 1050.0] * 20))
+
+    assert [ax.get_title(loc="left") for ax in plot_poincare(rec).axes] == ["recording"]
 
 
 def test_histogram_of_a_constant_rhythm_has_one_bar(steady_recording):

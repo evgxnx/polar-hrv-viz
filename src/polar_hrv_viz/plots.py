@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.figure import Figure
 
 from .io import Recording
-from .processing import flag_artifacts
+from .processing import assign_phase, clean_pairs, flag_artifacts, poincare_sd
 from .style import (
     ARTIFACT,
+    AXIS,
     BAND,
+    INK,
     INK_SECONDARY,
     MOTION,
     SERIES,
@@ -93,6 +96,14 @@ def plot_timeline(rec: Recording, title: str | None = None) -> Figure:
     return fig
 
 
+def _phase_groups(rec: Recording) -> list[tuple[str, pd.DataFrame]]:
+    rr = flag_artifacts(rec.rr)
+    if rec.phases is None:
+        return [("recording", rr)]
+    phase = assign_phase(rr["t_s"], rec.phases)
+    return [(name, rr[phase == name]) for name in rec.phases["phase"]]
+
+
 def plot_rr_histogram(rec: Recording) -> Figure:
     rr = flag_artifacts(rec.rr)
     values = rr.loc[~rr["artifact"], "rr_ms"].to_numpy(dtype=float)
@@ -128,4 +139,54 @@ def plot_rr_histogram(rec: Recording) -> Figure:
         ax.set_xlabel(f"RR interval, ms ({HIST_BIN_MS} ms bins)")
         ax.set_ylabel("Share of beats, %")
         ax.set_ylim(0, share.max() * 1.15)
+    return fig
+
+
+def plot_poincare(rec: Recording) -> Figure:
+    groups = _phase_groups(rec)
+    pairs = [(name, *clean_pairs(beats)) for name, beats in groups]
+    every = np.concatenate([np.concatenate([c, f]) for _, c, f in pairs if len(c)])
+    lo, hi = np.percentile(every, [0.5, 99.5])
+    pad = max((hi - lo) * 0.08, 25.0)
+    lim = (lo - pad, hi + pad)
+
+    with light_theme():
+        fig, axes = plt.subplots(
+            1,
+            len(pairs),
+            figsize=(2.6 * len(pairs) + 0.6, 3.9),
+            sharex=True,
+            sharey=True,
+            squeeze=False,
+            layout="constrained",
+        )
+        for ax, (name, current, following) in zip(axes[0], pairs, strict=True):
+            ax.plot(lim, lim, color=AXIS, lw=0.8, zorder=1)
+            ax.scatter(current, following, s=6, color=SERIES, alpha=0.45, lw=0, zorder=2)
+            sd1, sd2 = poincare_sd(current, following)
+            ax.text(
+                0.97,
+                0.04,
+                f"SD1 {sd1:.0f} ms\nSD2 {sd2:.0f} ms",
+                transform=ax.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                color=INK_SECONDARY,
+            )
+            ax.set_title(name, fontsize=9, color=INK, pad=6)
+            ax.set_xlim(lim)
+            ax.set_ylim(lim)
+            ax.set_aspect("equal")
+            ax.grid(axis="both")
+            ax.set_xlabel("RR$_n$, ms")
+        axes[0][0].set_ylabel("RR$_{n+1}$, ms")
+        fig.suptitle(
+            "Poincaré plot of consecutive clean beats",
+            x=0.01,
+            ha="left",
+            fontsize=11,
+            fontweight="bold",
+        )
+        fig.get_layout_engine().set(h_pad=0.06)
     return fig
