@@ -58,3 +58,19 @@ def phase_summary(rr: pd.DataFrame, hr: pd.DataFrame, phases: pd.DataFrame) -> p
             }
         )
     return pd.DataFrame(rows)
+
+
+def clean_pairs(rr: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    rr = rr if "artifact" in rr else flag_artifacts(rr)
+    values = rr["rr_ms"].to_numpy(dtype=float)
+    clean = ~rr["artifact"].to_numpy()
+    keep = clean[:-1] & clean[1:]
+    return values[:-1][keep], values[1:][keep]
+
+
+def poincare_sd(current: np.ndarray, following: np.ndarray) -> tuple[float, float]:
+    if len(current) < 2:
+        return float("nan"), float("nan")
+    sd1 = np.std((following - current) / np.sqrt(2), ddof=1)
+    sd2 = np.std((following + current) / np.sqrt(2), ddof=1)
+    return float(sd1), float(sd2)

@@ -4,7 +4,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from polar_hrv_viz.processing import assign_phase, flag_artifacts, phase_summary, rmssd
+from polar_hrv_viz.processing import (
+    assign_phase,
+    clean_pairs,
+    flag_artifacts,
+    phase_summary,
+    poincare_sd,
+    rmssd,
+)
 
 
 def rr_table(values, blocker=None) -> pd.DataFrame:
@@ -87,3 +94,35 @@ def test_rmssd_skips_pairs_that_touch_an_artifact():
 
     assert row["rmssd_ms"] == pytest.approx(0.0)
     assert row["artifact_share"] == pytest.approx(1 / 30)
+
+
+def test_clean_pairs_drop_pairs_with_an_artifact():
+    values = [1000.0] * 10
+    values[4] = 2500.0
+
+    current, following = clean_pairs(rr_table(values))
+
+    assert len(current) == len(following) == 7
+    assert (current == 1000).all() and (following == 1000).all()
+
+
+def test_poincare_of_alternating_series_is_all_short_term():
+    values = np.array([1000.0, 1100.0] * 50)
+
+    sd1, sd2 = poincare_sd(values[:-1], values[1:])
+
+    assert sd1 == pytest.approx(100 / np.sqrt(2), rel=0.02)
+    assert sd2 == pytest.approx(0.0, abs=1e-9)
+
+
+def test_poincare_of_slow_drift_is_all_long_term():
+    values = np.linspace(800.0, 1200.0, 200)
+
+    sd1, sd2 = poincare_sd(values[:-1], values[1:])
+
+    assert sd1 == pytest.approx(0.0, abs=1e-9)
+    assert sd2 > 100
+
+
+def test_poincare_needs_two_pairs():
+    assert all(np.isnan(v) for v in poincare_sd(np.array([1000.0]), np.array([1000.0])))
