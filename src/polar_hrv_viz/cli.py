@@ -4,8 +4,10 @@ import argparse
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 from .io import RecordingError, load_recording
-from .plots import plot_timeline
+from .plots import plot_phase_heart_rate, plot_poincare, plot_rr_histogram, plot_timeline
 from .processing import flag_artifacts, phase_summary
 
 
@@ -26,9 +28,17 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     args.out.mkdir(parents=True, exist_ok=True)
-    fig = plot_timeline(rec, title=args.recording.name)
-    fig.savefig(args.out / "timeline.png", dpi=150)
-    print(f"wrote {args.out / 'timeline.png'}")
+    figures = {
+        "timeline": plot_timeline(rec, title=args.recording.name),
+        "rr_histogram": plot_rr_histogram(rec),
+        "poincare": plot_poincare(rec),
+        "phase_heart_rate": plot_phase_heart_rate(rec),
+    }
+    for name, fig in figures.items():
+        path = args.out / f"{name}.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+        print(f"wrote {path}")
 
     if rec.phases is not None:
         summary = phase_summary(flag_artifacts(rec.rr), rec.hr, rec.phases)

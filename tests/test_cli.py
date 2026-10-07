@@ -10,7 +10,8 @@ def test_cli_writes_figure_and_summary(steady_recording, tmp_path, capsys):
 
     assert main(["plot", str(steady_recording), "--out", str(out)]) == 0
 
-    assert (out / "timeline.png").stat().st_size > 0
+    for name in ["timeline", "rr_histogram", "poincare", "phase_heart_rate"]:
+        assert (out / f"{name}.png").stat().st_size > 0
     summary = pd.read_csv(out / "phase_summary.csv")
     assert summary["phase"].tolist() == ["rest", "task"]
 
