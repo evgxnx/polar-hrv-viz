@@ -16,6 +16,7 @@ GRID = "#e1e0d9"
 AXIS = "#c3c2b7"
 BAND = "#f4f3f0"
 SERIES = "#2a78d6"
+SERIES_LIGHT = "#cde2fb"
 MOTION = "#c3c2b7"
 ARTIFACT = "#d03b3b"
 

@@ -5,6 +5,7 @@ import pytest
 
 from polar_hrv_viz.io import load_recording
 from polar_hrv_viz.plots import (
+    plot_phase_heart_rate,
     plot_poincare,
     plot_rr_histogram,
     plot_timeline,
@@ -63,6 +64,13 @@ def test_poincare_without_phases_shows_the_whole_recording(tmp_path):
     rec = load_recording(write_recording(tmp_path / "r", [1000.0, 1050.0] * 20))
 
     assert [ax.get_title(loc="left") for ax in plot_poincare(rec).axes] == ["recording"]
+
+
+def test_phase_heart_rate_has_a_box_per_phase(steady_recording):
+    ax = plot_phase_heart_rate(load_recording(steady_recording)).axes[0]
+
+    assert [t.get_text() for t in ax.get_xticklabels()] == ["rest", "task"]
+    assert [t.get_text() for t in ax.texts] == ["60", "60"]
 
 
 def test_histogram_of_a_constant_rhythm_has_one_bar(steady_recording):

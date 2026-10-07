@@ -15,6 +15,7 @@ from .style import (
     INK_SECONDARY,
     MOTION,
     SERIES,
+    SERIES_LIGHT,
     SURFACE,
     light_theme,
 )
@@ -189,4 +190,40 @@ def plot_poincare(rec: Recording) -> Figure:
             fontweight="bold",
         )
         fig.get_layout_engine().set(h_pad=0.06)
+    return fig
+
+
+def plot_phase_heart_rate(rec: Recording) -> Figure:
+    groups = _phase_groups(rec)
+    names = [name for name, _ in groups]
+    data = [
+        60000 / beats.loc[~beats["artifact"], "rr_ms"].to_numpy(dtype=float) for _, beats in groups
+    ]
+
+    with light_theme():
+        fig, ax = plt.subplots(figsize=(1.3 * len(groups) + 2.2, 3.6), layout="constrained")
+        ax.boxplot(
+            data,
+            tick_labels=names,
+            widths=0.5,
+            showfliers=False,
+            patch_artist=True,
+            boxprops={"facecolor": SERIES_LIGHT, "edgecolor": SERIES, "linewidth": 1},
+            medianprops={"color": INK, "linewidth": 1.5},
+            whiskerprops={"color": AXIS, "linewidth": 1},
+            capprops={"color": AXIS, "linewidth": 1},
+        )
+        for i, values in enumerate(data, start=1):
+            if len(values):
+                ax.text(
+                    i + 0.3,
+                    np.median(values),
+                    f"{np.median(values):.0f}",
+                    va="center",
+                    fontsize=8,
+                    color=INK_SECONDARY,
+                )
+        ax.set_title("Heart rate by phase")
+        ax.set_ylabel("Heart rate from clean RR, bpm")
+        ax.tick_params(axis="x", colors=AXIS, labelcolor=INK_SECONDARY, labelsize=9)
     return fig
