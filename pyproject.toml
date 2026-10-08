@@ -16,6 +16,7 @@ polar-hrv-viz = "polar_hrv_viz.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8",
+    "pytest-cov>=7.1.0",
     "ruff>=0.6",
 ]
 
@@ -32,3 +33,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.coverage.run]
+source = ["polar_hrv_viz"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+exclude_also = ['if __name__ == "__main__":']
