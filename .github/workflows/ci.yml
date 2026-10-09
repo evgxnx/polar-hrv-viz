@@ -38,7 +38,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
       - run: uv run pytest --cov --cov-report=term --cov-report=xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: matrix.python-version == '3.12'
         with:
           name: coverage
@@ -59,7 +59,7 @@ jobs:
           /tmp/smoke/bin/polar-hrv-viz synth /tmp/smoke-data
           /tmp/smoke/bin/polar-hrv-viz plot /tmp/smoke-data --out /tmp/smoke-out
           /tmp/smoke/bin/polar-hrv-viz report /tmp/smoke-data --out /tmp/smoke-out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
