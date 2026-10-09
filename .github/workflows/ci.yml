@@ -58,6 +58,7 @@ jobs:
           uv pip install --python /tmp/smoke dist/*.whl
           /tmp/smoke/bin/polar-hrv-viz synth /tmp/smoke-data
           /tmp/smoke/bin/polar-hrv-viz plot /tmp/smoke-data --out /tmp/smoke-out
+          /tmp/smoke/bin/polar-hrv-viz report /tmp/smoke-data --out /tmp/smoke-out
       - uses: actions/upload-artifact@v4
         with:
           name: dist

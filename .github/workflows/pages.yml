@@ -23,8 +23,10 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
       - run: uv run polar-hrv-viz synth site/synthetic
-      - run: uv run polar-hrv-viz plot site/synthetic --out site
-      - run: uv run python scripts/build_gallery.py site
+      - run: >-
+          uv run polar-hrv-viz report site/synthetic --out site --name index.html
+          --title "polar-hrv-viz gallery"
+          --subtitle "Rendered by CI from a synthetic five-phase recording. The data are generated, not measured."
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
