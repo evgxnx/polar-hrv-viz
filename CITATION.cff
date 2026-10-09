@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "polar-hrv-viz: visualisation of heart rate, RR intervals and motion from Polar optical sensors"
+abstract: >-
+  A small Python package and command line tool that loads heart rate,
+  RR interval and accelerometer recordings from a Polar optical sensor,
+  flags artifacts, summarises each phase of an experiment and renders
+  timeline, RR histogram, Poincaré and per-phase heart rate figures.
+  Developed as part of research on multimodal emotional AI for assessing
+  the professional preparation of educators.
+authors:
+  - family-names: Barkovskiy
+    given-names: Yevgeniy
+    alias: evgxnx
+version: 0.1.0
+date-released: 2026-10-09
+license: MIT
+repository-code: "https://github.com/evgxnx/polar-hrv-viz"
+url: "https://evgxnx.github.io/polar-hrv-viz/"
+keywords:
+  - heart rate variability
+  - RR intervals
+  - Poincaré plot
+  - Polar Verity Sense
+  - psychophysiology
+  - visualization
