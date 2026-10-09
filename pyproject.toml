@@ -3,12 +3,25 @@ name = "polar-hrv-viz"
 version = "0.1.0"
 description = "Visualise heart rate, RR intervals and motion recorded with a Polar optical sensor, split by experiment phases."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Yevgeniy Barkovskiy" }]
+keywords = ["heart rate variability", "rr intervals", "polar", "visualization", "psychophysiology"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
     "matplotlib>=3.8",
 ]
+
+[project.urls]
+Repository = "https://github.com/evgxnx/polar-hrv-viz"
+Gallery = "https://evgxnx.github.io/polar-hrv-viz/"
 
 [project.scripts]
 polar-hrv-viz = "polar_hrv_viz.cli:main"
