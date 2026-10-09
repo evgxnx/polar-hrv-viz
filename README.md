@@ -27,6 +27,7 @@ The package was written for research on **multimodal emotional AI for assessing 
   | `poincare.png` | Each clean RR interval against the next one, one panel per phase, with SD1 and SD2 |
   | `phase_heart_rate.png` | Heart rate derived from clean RR intervals, one box per phase |
 
+- Builds a self-contained HTML report: overview tiles, the phase summary table, all figures and a short method note in one file that opens in any browser and prints cleanly.
 - Generates a reproducible synthetic recording with a five-phase protocol, for demos and tests.
 
 ## Installation
@@ -62,6 +63,14 @@ recovery        67.16      894.42     37.19    332            0.02
   typing        69.64      859.44     26.49    343            0.06
  standup        76.04      775.09     21.69    213            0.19
 ```
+
+To get everything as one HTML page instead:
+
+```bash
+uv run polar-hrv-viz report data/synthetic --out out/synthetic --title "Session 1"
+```
+
+This writes the same files plus `out/synthetic/report.html`. The figures are embedded in the page, so the single file can be sent or archived on its own. Options: `--title`, `--subtitle` and `--name` (file name, default `report.html`).
 
 The functions can also be used from Python:
 
@@ -116,8 +125,9 @@ Flagged beats are shown as red crosses and become gaps in the RR line. They are 
 | **Python** | The standard language for scientific data processing. The rest of the research pipeline (signal processing, ML models) is in Python too, so this module plugs into it without glue. |
 | **pandas** | Recordings are small time-indexed tables. CSV parsing with type coercion, rolling medians and grouping by phase are one-liners. |
 | **NumPy** | Vectorised arithmetic for RMSSD, Poincaré descriptors and the synthetic generator. |
+| **Plain HTML + CSS** | The report is a static page with images embedded as base64: no JavaScript, no web framework, no template engine. It opens offline, survives being emailed and prints well. |
 | **matplotlib** | Static, publication-quality figures that go straight into a paper or a thesis. It is deterministic and headless (`Agg` backend), so figures render identically in CI. One `rc_context` keeps the whole style in a single module. |
-| **argparse** | The command line has two subcommands. The standard library is enough, and it adds no dependency. |
+| **argparse** | The command line has three subcommands. The standard library is enough, and it adds no dependency. |
 | **uv** | One tool for the virtual environment, the lock file (`uv.lock`) and the build. `uv sync --locked` in CI reproduces the exact environment from the lock file. |
 | **hatchling** | A minimal standards-based (PEP 517) build backend with a `src/` layout and no configuration code. |
 | **pytest + pytest-cov** | Plain-function tests, fixtures for temporary recordings, parametrised cases. Coverage is enforced at 90 %. |
@@ -140,14 +150,14 @@ The tests use signals whose correct answer is known in advance:
 - a single missed beat (one doubled interval) is flagged, and the beats around it are not;
 - on the synthetic recording, the phase means recover the protocol values, and more than 90 % of the injected artifacts are found.
 
-Input validation, every figure (panels, labels, bar widths, phase titles) and both CLI commands are covered as well.
+Input validation, every figure (panels, labels, bar widths, phase titles) the HTML report (embedded images, escaping of user text, layout without phases) and every CLI command are covered as well.
 
 ## CI/CD
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | push to `main`, pull requests | ruff lint and format check; pytest with coverage on Python 3.11, 3.12 and 3.13; builds the wheel and sdist, installs the wheel into a clean environment and runs both commands |
-| [`pages.yml`](.github/workflows/pages.yml) | push to `main` | generates the synthetic recording, renders all figures and deploys the [gallery](https://evgxnx.github.io/polar-hrv-viz/) to GitHub Pages |
+| [`ci.yml`](.github/workflows/ci.yml) | push to `main`, pull requests | ruff lint and format check; pytest with coverage on Python 3.11, 3.12 and 3.13; builds the wheel and sdist, installs the wheel into a clean environment and runs every command |
+| [`pages.yml`](.github/workflows/pages.yml) | push to `main` | generates the synthetic recording, builds the HTML report and deploys it as the [gallery](https://evgxnx.github.io/polar-hrv-viz/) to GitHub Pages |
 | [`release.yml`](.github/workflows/release.yml) | tag `v*` | runs the tests, checks that the tag matches the package version, builds and publishes a GitHub release with the wheel and sdist |
 
 To release: bump `version` in `pyproject.toml`, commit, then `git tag v0.2.0 && git push --tags`.
@@ -160,10 +170,9 @@ src/polar_hrv_viz/
   processing.py  artifacts, phases, RMSSD, Poincaré descriptors
   plots.py       figures
   style.py       light theme
+  report.py      HTML report
   synthetic.py   synthetic recording generator
-  cli.py         polar-hrv-viz plot | synth
-scripts/
-  build_gallery.py  HTML page for GitHub Pages
+  cli.py         polar-hrv-viz plot | report | synth
 tests/
 ```
 
