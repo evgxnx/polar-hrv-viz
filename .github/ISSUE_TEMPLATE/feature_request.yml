@@ -1,0 +1,16 @@
+name: Feature request
+description: A new figure, metric or input format
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you need
+      description: The research question or workflow this would help with.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How it could work, with references for any new metric.

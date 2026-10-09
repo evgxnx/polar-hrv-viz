@@ -1,0 +1,24 @@
+name: Bug report
+description: Something is computed or drawn wrong, or a command fails
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Commands, and a small recording if possible (a synthetic one from `polar-hrv-viz synth --seed N` is ideal). Do not attach personal recordings.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.1.0, Python 3.12, Linux"
