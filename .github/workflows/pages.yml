@@ -28,7 +28,7 @@ jobs:
           --title "polar-hrv-viz gallery"
           --subtitle "Rendered by CI from a synthetic five-phase recording. The data are generated, not measured."
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
