@@ -1,12 +1,15 @@
 name: Gallery
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 
@@ -14,19 +17,30 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # The image CI just pushed for this commit; a manual run takes the latest one.
+  IMAGE: ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha && format('sha-{0}', github.event.workflow_run.head_sha) || 'latest' }}
+
 jobs:
   build:
     name: Render figures
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-      - run: uv sync --locked
-      - run: uv run polar-hrv-viz synth site/synthetic
-      - run: >-
-          uv run polar-hrv-viz report site/synthetic --out site --name index.html
-          --title "polar-hrv-viz gallery"
-          --subtitle "Rendered by CI from a synthetic five-phase recording. The data are generated, not measured."
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker pull "$IMAGE"
+      - name: Render the report in the container
+        run: |
+          mkdir site
+          run() { docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/site:/work" "$IMAGE" "$@"; }
+          run synth /work/synthetic
+          run report /work/synthetic --out /work --name index.html \
+            --title "polar-hrv-viz gallery" \
+            --subtitle "Rendered by CI from a synthetic five-phase recording. The data are generated, not measured."
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
