@@ -82,6 +82,17 @@ rec = load_recording("data/synthetic")
 plot_poincare(rec).savefig("poincare.png", dpi=150)
 ```
 
+## Docker
+
+Every commit to `main` publishes an image to `ghcr.io/evgxnx/polar-hrv-viz` (tags `latest` and `sha-<commit>`). It runs as a non-root user with `/work` as the working directory:
+
+```bash
+docker run --rm -v "$PWD/data:/work" ghcr.io/evgxnx/polar-hrv-viz synth /work/synthetic
+docker run --rm -v "$PWD/data:/work" ghcr.io/evgxnx/polar-hrv-viz report /work/synthetic --out /work/out
+```
+
+To build it locally: `docker build -t polar-hrv-viz .`
+
 ## Input format
 
 A recording is a directory of CSV files. Times are in seconds from the start of the recording.
@@ -156,9 +167,15 @@ Input validation, every figure (panels, labels, bar widths, phase titles) the HT
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | push to `main`, pull requests | ruff lint and format check; pytest with coverage on Python 3.11, 3.12 and 3.13; builds the wheel and sdist, installs the wheel into a clean environment and runs every command |
-| [`pages.yml`](.github/workflows/pages.yml) | push to `main` | generates the synthetic recording, builds the HTML report and deploys it as the [gallery](https://evgxnx.github.io/polar-hrv-viz/) to GitHub Pages |
+| [`ci.yml`](.github/workflows/ci.yml) | push to `main`, pull requests | ruff lint and format check; pytest with coverage on Python 3.11, 3.12 and 3.13; builds the wheel and sdist and smoke-tests it; builds the Docker image, runs every command inside it and, on `main`, pushes it to GHCR |
+| [`pages.yml`](.github/workflows/pages.yml) | CI succeeded on `main` | pulls the image CI pushed for that commit, renders the HTML report in the container and deploys it as the [gallery](https://evgxnx.github.io/polar-hrv-viz/) to GitHub Pages |
+| [`k8s.yml`](.github/workflows/k8s.yml) | CI succeeded on `main` | starts a kind cluster, loads the same image and runs [`k8s/job.yaml`](k8s/job.yaml): a Job that generates a recording and builds the report |
 | [`release.yml`](.github/workflows/release.yml) | tag `v*` | runs the tests, checks that the tag matches the package version, builds and publishes a GitHub release with the wheel and sdist |
+
+```
+push -> lint + tests -> package build -> Docker image -> GHCR -> GitHub Pages
+                                                             -> Kubernetes Job (kind)
+```
 
 To release: bump `version` in `pyproject.toml`, commit, then `git tag v0.2.0 && git push --tags`.
 
