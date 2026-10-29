@@ -63,3 +63,53 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  docker:
+    name: Docker image
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: polar-hrv-viz:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test the image
+        run: |
+          mkdir smoke
+          run() { docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/smoke:/work" polar-hrv-viz:ci "$@"; }
+          run synth /work/data
+          run plot /work/data --out /work/out
+          run report /work/data --out /work/out
+          test -s smoke/out/report.html
+          test -s smoke/out/phase_summary.csv
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
