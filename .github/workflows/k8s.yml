@@ -1,0 +1,46 @@
+name: Kubernetes
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha && format('sha-{0}', github.event.workflow_run.head_sha) || 'latest' }}
+
+jobs:
+  deploy:
+    name: Run report job on kind
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: hrv
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load the image into the cluster
+        run: |
+          docker pull "$IMAGE"
+          docker tag "$IMAGE" polar-hrv-viz:k8s
+          kind load docker-image polar-hrv-viz:k8s --name hrv
+      - run: kubectl apply -f k8s/job.yaml
+      - name: Wait for the job
+        run: kubectl wait --for=condition=complete job/hrv-report --timeout=180s
+      - name: Show logs
+        if: always()
+        run: |
+          kubectl get pods -l app=polar-hrv-viz -o wide
+          kubectl logs job/hrv-report --all-containers --prefix
+      - name: Check the report was written
+        run: kubectl logs job/hrv-report -c report | grep -q "wrote /work/out/report.html"
