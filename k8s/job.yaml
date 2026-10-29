@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hrv-report
+  labels:
+    app: polar-hrv-viz
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: polar-hrv-viz
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      initContainers:
+        - name: synth
+          image: polar-hrv-viz:k8s
+          imagePullPolicy: Never
+          args: ["synth", "/work/data"]
+          volumeMounts:
+            - name: work
+              mountPath: /work
+      containers:
+        - name: report
+          image: polar-hrv-viz:k8s
+          imagePullPolicy: Never
+          args: ["report", "/work/data", "--out", "/work/out"]
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          volumeMounts:
+            - name: work
+              mountPath: /work
+      volumes:
+        - name: work
+          emptyDir: {}
